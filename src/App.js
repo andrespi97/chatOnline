@@ -6,7 +6,13 @@ import "firebase/auth";
 
 import { useAuthState, useSignInWithGoogle } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  signInWithRedirect,
+} from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -14,8 +20,9 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
+  getDocs,
 } from "firebase/firestore";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, query, where } from "firebase/firestore";
 import { func } from "prop-types";
 
 const firebaseConfig = {
@@ -28,67 +35,85 @@ const firebaseConfig = {
   measurementId: "G-V83Q1Q4J5V",
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 function SignIn() {
-  const useSignInWithGoogle = () => {
-    const provider = new app.auth.GoogleAuthProvider();
-    auth.useSignInWithPopup(provider);
+  const useSignInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    const resultado = await signInWithPopup(auth, provider);
+    const usuario = resultado.user;
+    const credential = GoogleAuthProvider.credentialFromResult(resultado);
+    const token = credential.accessToken;
+    console.log(auth.currentUser);
   };
   return <button onClick={useSignInWithGoogle}>Conéctate con Google</button>;
 }
 function SignOut() {
   return (
-    auth.currentUser && <button onClick={() => auth.signOut}>Sign Out</button>
+    auth.currentUser && <button onClick={() => signOut(auth)}>Sign Out</button>
   );
 }
 
 function App() {
-  const user = useAuthState(auth);
+  const [user] = useAuthState(auth);
   return (
     <div className="App">
-      <header className="App-header">hello</header>
-      <section>{user ? <ChatRoom /> : <SignIn />}</section>
+      <SignOut></SignOut>
+      <SignIn />
+      <header className="App-header">
+        <p>{user ? "logged" : "unlogged"}</p>
+      </header>
+      <ChatRoom />
+      {/* <section>{user ? <ChatRoom /> : }</section> */}
     </div>
   );
 }
 function ChatRoom() {
-  const mensajes = doc(db, "chat", "mensajes");
-  setDoc(mensajes, {
-    momento: serverTimestamp(),
-    texto: "hola Andres!",
+  const q = collection(db, "chat");
+  const mensajes = [];
+  const unsubscribe = onSnapshot(q, (capturaMensajes) => {
+    capturaMensajes.forEach((msj) => {
+      mensajes.push(msj.data());
+      return (
+        <div>
+          <p>hola</p>
+          <MensajeChat></MensajeChat>
+        </div>
+      );
+    });
   });
+  console.log(mensajes);
 
-  const [formValue, setFormValue] = useState("");
-
-  return (
-    <>
-      <div>
-        {onSnapshot(doc(mensajes), (msj) => {
-          <ChatMessage key={msj.id} texto={msj.texto} />;
-        })}
-      </div>
-      <form onSubmit={sendMessage}>
-        <input
-          value={formValue}
-          onChange={(e) => setFormValue(e.target.value)}
-        ></input>
-        <button type="submit">ENVIAR</button>
-      </form>
-    </>
-  );
+  // return (
+  //   <>
+  //     <div>
+  //       {onSnapshot(doc(mensajes), (msj) => {
+  //         <ChatMessage key={msj.id} texto={msj.texto} />;
+  //       })}
+  //     </div>
+  //     <form onSubmit={sendMessage}>
+  //       <input
+  //         value={formValue}
+  //         onChange={(e) => setFormValue(e.target.value)}
+  //       ></input>
+  //       <button type="submit">ENVIAR</button>
+  //     </form>
+  //   </>
+  // );
 }
-function ChatMessage(props) {
-  const { text, uid, photoURL } = props.mensaje;
+function MensajeChat(props) {
+  const { texto, uid, photoURL } = props.data;
   const tipo = uid === auth.currentUser.uid ? "sent" : "recieved";
   return (
-    <div className={"message ${tipo}"}>
-      <p>{text}</p>
+    <div className={"${tipo}"}>
+      <p>hola</p>
     </div>
   );
 }
+
 const sendMessage = async (e) => {
   e.preventDefault();
   const { uid, photoURL } = auth.currentUser;
@@ -97,11 +122,6 @@ const sendMessage = async (e) => {
   // Update the timestamp field with the value from the server
   const updateTimestamp = await updateDoc(mensajes, {
     momento: serverTimestamp(),
-  });
-
-  await addDoc(collection(db, "chat"), {
-    momento: "12 jul 2024",
-    texto: "hola Andres!",
   });
 };
 export default App;
