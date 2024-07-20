@@ -64,7 +64,9 @@ form {
   display: flex;
   font-size: 1.5rem;
 }
-
+.margin {
+  margin-bottom: 10vh;
+}
 form button {
   width: 20%;
   background-color: rgb(56, 56, 143);

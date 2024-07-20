@@ -1,11 +1,10 @@
 import "./App.css";
 import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
-import "firebase/firestore";
-import "firebase/auth";
 
 import { useAuthState, useSignInWithGoogle } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
+
 import {
   getAuth,
   GoogleAuthProvider,
@@ -13,6 +12,7 @@ import {
   signOut,
   signInWithRedirect,
 } from "firebase/auth";
+
 import {
   getFirestore,
   collection,
@@ -21,8 +21,14 @@ import {
   serverTimestamp,
   updateDoc,
   getDocs,
+  doc,
+  onSnapshot,
+  setDoc,
+  query,
+  where,
+  orderBy,
 } from "firebase/firestore";
-import { doc, onSnapshot, setDoc, query, where } from "firebase/firestore";
+
 import { func } from "prop-types";
 
 const firebaseConfig = {
@@ -98,7 +104,7 @@ function ChatRoom() {
   };
   useEffect(() => {
     //cogemos colección con filtro o sin filtro
-    const q = query(collection(db, "chat"));
+    const q = query(collection(db, "chat"), orderBy("momento", "asc"));
     //Hacemos que cuando cambie la colección
     //onSnapshot: Establece una suscripción en tiempo real a la colección referenciada por q.
     //querySnapshot: Es un objeto que contiene los resultados actuales de la consulta
@@ -120,8 +126,7 @@ function ChatRoom() {
 
   return (
     <>
-      <div>
-        <p>Mensaje:</p>
+      <div className="margin">
         {mensajes.map((msj) => (
           <MensajeChat key={msj.id} data={msj.data} />
         ))}
@@ -144,10 +149,7 @@ function MensajeChat(props) {
 
   return (
     <div className={`${tipo} message`}>
-      <p>
-        <img src={photoURL} />
-        {texto}
-      </p>
+      <img src={photoURL} /> <p>{texto}</p>
     </div>
   );
 }
