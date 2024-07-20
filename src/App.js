@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import "firebase/firestore";
 import "firebase/auth";
@@ -49,11 +49,19 @@ function SignIn() {
     const token = credential.accessToken;
     console.log(auth.currentUser);
   };
-  return <button onClick={useSignInWithGoogle}>Conéctate con Google</button>;
+  return (
+    <button className="green" onClick={useSignInWithGoogle}>
+      Conéctate con Google
+    </button>
+  );
 }
 function SignOut() {
   return (
-    auth.currentUser && <button onClick={() => signOut(auth)}>Sign Out</button>
+    auth.currentUser && (
+      <button className="sign-out" onClick={() => signOut(auth)}>
+        Sign Out
+      </button>
+    )
   );
 }
 
@@ -61,67 +69,87 @@ function App() {
   const [user] = useAuthState(auth);
   return (
     <div className="App">
-      <SignOut></SignOut>
-      <SignIn />
       <header className="App-header">
-        <p>{user ? "logged" : "unlogged"}</p>
+        <h1>Chat by andrés piñeiro</h1>
       </header>
-      <ChatRoom />
-      {/* <section>{user ? <ChatRoom /> : }</section> */}
+      <SignOut />
+      <section>{user ? <ChatRoom /> : <SignIn />}</section>
     </div>
   );
 }
 function ChatRoom() {
-  const q = collection(db, "chat");
-  const mensajes = [];
-  const unsubscribe = onSnapshot(q, (capturaMensajes) => {
-    capturaMensajes.forEach((msj) => {
-      mensajes.push(msj.data());
-      return (
-        <div>
-          <p>hola</p>
-          <MensajeChat></MensajeChat>
-        </div>
-      );
+  const dummy = useRef();
+  //hook para almacenar la información de firebase
+  const [mensajes, setMensajes] = useState([]);
+  const [formValue, setFormValue] = useState("");
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    const q = collection(db, "chat");
+    const { uid, photoURL } = auth.currentUser;
+    await addDoc(q, {
+      texto: formValue,
+      // Update the timestamp field with the value from the server
+      momento: serverTimestamp(),
+      uid,
+      photoURL,
     });
-  });
-  console.log(mensajes);
+    setFormValue("");
+    dummy.current.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => {
+    //cogemos colección con filtro o sin filtro
+    const q = query(collection(db, "chat"));
+    //Hacemos que cuando cambie la colección
+    //onSnapshot: Establece una suscripción en tiempo real a la colección referenciada por q.
+    //querySnapshot: Es un objeto que contiene los resultados actuales de la consulta
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const mensajesTemp = [];
+      querySnapshot.forEach((doc) => {
+        mensajesTemp.push({ id: doc.id, data: doc.data() });
+      });
+      //actualizar el estado
+      setMensajes(mensajesTemp);
+    });
+    // Limpiar la suscripción al desmontar el componente
+    return () => unsubscribe();
+  }, []); // El array vacío asegura que el efecto se ejecute solo una vez, al montar el componente
+  useEffect(() => {
+    // Imprimir los mensajes cada vez que se actualicen
+    console.log(mensajes);
+  }, [mensajes]); // Dependencia en mensajes para que el efecto se ejecute solo cuando los mensajes cambien
 
-  // return (
-  //   <>
-  //     <div>
-  //       {onSnapshot(doc(mensajes), (msj) => {
-  //         <ChatMessage key={msj.id} texto={msj.texto} />;
-  //       })}
-  //     </div>
-  //     <form onSubmit={sendMessage}>
-  //       <input
-  //         value={formValue}
-  //         onChange={(e) => setFormValue(e.target.value)}
-  //       ></input>
-  //       <button type="submit">ENVIAR</button>
-  //     </form>
-  //   </>
-  // );
+  return (
+    <>
+      <div>
+        <p>Mensaje:</p>
+        {mensajes.map((msj) => (
+          <MensajeChat key={msj.id} data={msj.data} />
+        ))}
+        <div ref={dummy}></div>
+      </div>
+      <form onSubmit={sendMessage}>
+        <input
+          value={formValue}
+          onChange={(e) => setFormValue(e.target.value)}
+        ></input>
+        <button type="submit">ENVIAR</button>
+      </form>
+      <SignOut />
+    </>
+  );
 }
 function MensajeChat(props) {
-  const { texto, uid, photoURL } = props.data;
-  const tipo = uid === auth.currentUser.uid ? "sent" : "recieved";
+  const { texto, uid, photoURL, momento } = props.data;
+  const tipo = uid === auth.currentUser.uid ? "sent" : "received";
+
   return (
-    <div className={"${tipo}"}>
-      <p>hola</p>
+    <div className={`${tipo} message`}>
+      <p>
+        <img src={photoURL} />
+        {texto}
+      </p>
     </div>
   );
 }
 
-const sendMessage = async (e) => {
-  e.preventDefault();
-  const { uid, photoURL } = auth.currentUser;
-  const mensajes = doc(db, "chat", "mensajes");
-
-  // Update the timestamp field with the value from the server
-  const updateTimestamp = await updateDoc(mensajes, {
-    momento: serverTimestamp(),
-  });
-};
 export default App;
