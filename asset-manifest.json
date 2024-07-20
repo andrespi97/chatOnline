@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/chatOnline/static/css/main.362f0d20.css",
+    "main.js": "/chatOnline/static/js/main.0d98a67b.js",
+    "static/js/453.7f6a5ca4.chunk.js": "/chatOnline/static/js/453.7f6a5ca4.chunk.js",
+    "index.html": "/chatOnline/index.html",
+    "main.362f0d20.css.map": "/chatOnline/static/css/main.362f0d20.css.map",
+    "main.0d98a67b.js.map": "/chatOnline/static/js/main.0d98a67b.js.map",
+    "453.7f6a5ca4.chunk.js.map": "/chatOnline/static/js/453.7f6a5ca4.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.362f0d20.css",
+    "static/js/main.0d98a67b.js"
+  ]
+}
