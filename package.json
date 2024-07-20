@@ -13,7 +13,7 @@
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
-  "homepage": "http://andrespi97.github.io/chatOnline",
+  "homepage": "https://andrespi97.github.io/chatOnline",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
